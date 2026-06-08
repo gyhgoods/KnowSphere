@@ -21,7 +21,7 @@ export const tokenStorage = {
 }
 
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
   timeout: 15000,
 })
 
@@ -60,4 +60,3 @@ http.interceptors.response.use(undefined, async (error) => {
     return Promise.reject(refreshError)
   }
 })
-

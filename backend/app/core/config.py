@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     access_token_minutes: int = 30
     refresh_token_days: int = 7
     cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origin_regex: str | None = (
+        r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|"
+        r"10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)"
+        r"(:\d+)?$"
+    )
     first_superuser_username: str = "admin"
     first_superuser_email: EmailStr = "admin@example.com"
     first_superuser_password: str = "ChangeMe123!"

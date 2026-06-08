@@ -13,9 +13,11 @@ app = FastAPI(title=settings.app_name, version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
 install_exception_handlers(app)
 
@@ -35,4 +37,3 @@ async def health() -> dict[str, str]:
 
 for api_router in (auth.router, users.router, departments.router, rbac.router):
     app.include_router(api_router, prefix="/api/v1")
-
