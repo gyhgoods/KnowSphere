@@ -7,6 +7,8 @@ from docx import Document as WordDocument
 from openpyxl import load_workbook
 from pypdf import PdfReader
 
+from app.services.text_processing import normalize_text
+
 
 class UnsupportedDocumentTypeError(ValueError):
     pass
@@ -16,7 +18,7 @@ TEXT_SUFFIXES = {".txt", ".md", ".markdown", ".log", ".xml", ".yaml", ".yml"}
 
 
 def clean_text(parts: list[str]) -> str:
-    return "\n".join(line.strip() for line in parts if line and line.strip()).strip()
+    return normalize_text("\n".join(part for part in parts if part))
 
 
 def decode_text(content: bytes) -> str:

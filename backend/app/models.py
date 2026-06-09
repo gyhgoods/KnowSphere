@@ -23,6 +23,8 @@ from app.knowledge_models import (  # noqa: E402, F401
     Document,
     DocumentFile,
     DocumentVersion,
+    KnowledgeChunk,
+    KnowledgeEmbedding,
     KnowledgeSpace,
     Tag,
 )

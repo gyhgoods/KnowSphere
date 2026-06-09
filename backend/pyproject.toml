@@ -23,6 +23,7 @@ dependencies = [
   "pypdf>=5.6,<6",
   "python-docx>=1.1,<2",
   "openpyxl>=3.1,<4",
+  "pgvector>=0.4,<1",
   "structlog>=25.2,<26",
 ]
 

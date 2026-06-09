@@ -79,3 +79,25 @@ Parsing state and extracted text are available through:
 
 - `GET /api/v1/files/{file_id}/parse`
 - `POST /api/v1/files/{file_id}/parse` to retry
+
+## Chunking and semantic search
+
+T34-T40 normalize parsed text, create overlapping chunks, generate embeddings,
+store 1024-dimensional vectors in pgvector, and expose permission-aware semantic
+search.
+
+Development and automated tests use `EMBEDDING_PROVIDER=hash`, which requires no
+model download. For a locally deployed bge-m3 model through Ollama, configure:
+
+```dotenv
+EMBEDDING_PROVIDER=ollama
+EMBEDDING_MODEL=bge-m3
+EMBEDDING_BASE_URL=http://localhost:11434
+```
+
+Relevant endpoints:
+
+- `GET /api/v1/documents/{document_id}/chunks`
+- `POST /api/v1/documents/{document_id}/chunks/rebuild`
+- `DELETE /api/v1/chunks/{chunk_id}`
+- `POST /api/v1/search/semantic`

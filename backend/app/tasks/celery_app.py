@@ -6,7 +6,10 @@ celery_app = Celery(
     "knowsphere",
     broker=settings.rabbitmq_url,
     backend=settings.redis_url,
-    include=["app.tasks.document_parse_task"],
+    include=[
+        "app.tasks.document_parse_task",
+        "app.tasks.document_index_task",
+    ],
 )
 celery_app.conf.update(
     accept_content=["json"],

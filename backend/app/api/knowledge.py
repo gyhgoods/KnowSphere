@@ -37,6 +37,7 @@ from app.knowledge_schemas import (
 from app.models import Department
 from app.services.authorization import can_access_resource
 from app.services.storage import get_storage
+from app.tasks.document_index_task import enqueue_document_index
 
 router = APIRouter(tags=["Knowledge"])
 
@@ -169,6 +170,14 @@ def add_version(document: Document, user_id: int) -> DocumentVersion:
         content_format=document.content_format,
         created_by=user_id,
     )
+
+
+async def enqueue_index(document_id: int) -> None:
+    try:
+        await run_in_threadpool(enqueue_document_index, document_id)
+    except Exception:
+        # Document persistence must not fail when the async worker is unavailable.
+        return
 
 
 @router.get("/spaces", response_model=list[SpaceRead])
@@ -458,6 +467,7 @@ async def create_document(
         tag.usage_count += 1
     await db.commit()
     await db.refresh(document)
+    await enqueue_index(document.id)
     return document
 
 
@@ -508,6 +518,8 @@ async def update_document(
         document.review_comment = None
     await db.commit()
     await db.refresh(document)
+    if changed_content:
+        await enqueue_index(document.id)
     return document
 
 
@@ -628,4 +640,5 @@ async def restore_version(
     db.add(add_version(document, user.id))
     await db.commit()
     await db.refresh(document)
+    await enqueue_index(document.id)
     return document

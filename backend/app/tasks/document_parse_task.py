@@ -94,6 +94,9 @@ def parse_document_file(self: Task, file_id: int) -> dict[str, object]:
             parse_completed_at=datetime.now(UTC),
         )
     )
+    from app.tasks.document_index_task import enqueue_document_index
+
+    enqueue_document_index(record.document_id, record.id)
     return {
         "file_id": file_id,
         "status": FileParseStatus.COMPLETED.value,

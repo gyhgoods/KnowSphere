@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import StrEnum
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     Column,
@@ -150,6 +152,9 @@ class Document(Base, TimestampMixin):
     files: Mapped[list["DocumentFile"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
+    chunks: Mapped[list["KnowledgeChunk"]] = relationship(
+        back_populates="document", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class DocumentVersion(Base):
@@ -199,7 +204,57 @@ class DocumentFile(Base, TimestampMixin):
     parse_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     document: Mapped[Document] = relationship(back_populates="files")
+    chunks: Mapped[list["KnowledgeChunk"]] = relationship(
+        back_populates="file", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     @property
     def parsed_text_length(self) -> int:
         return len(self.parsed_text or "")
+
+
+class KnowledgeChunk(Base, TimestampMixin):
+    __tablename__ = "kb_chunk"
+    __table_args__ = (
+        UniqueConstraint(
+            "document_id",
+            "source_key",
+            "chunk_index",
+            name="uq_chunk_document_source_index",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(
+        ForeignKey("kb_document.id", ondelete="CASCADE"), index=True
+    )
+    file_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kb_document_file.id", ondelete="CASCADE"), index=True
+    )
+    source_key: Mapped[str] = mapped_column(String(64), index=True)
+    chunk_index: Mapped[int] = mapped_column(Integer)
+    content: Mapped[str] = mapped_column(Text)
+    token_count: Mapped[int] = mapped_column(Integer)
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    chunk_metadata: Mapped[dict[str, object]] = mapped_column(
+        "metadata", JSON, default=dict
+    )
+
+    document: Mapped[Document] = relationship(back_populates="chunks")
+    file: Mapped[DocumentFile | None] = relationship(back_populates="chunks")
+    embedding: Mapped["KnowledgeEmbedding | None"] = relationship(
+        back_populates="chunk", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class KnowledgeEmbedding(Base, TimestampMixin):
+    __tablename__ = "kb_embedding"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chunk_id: Mapped[int] = mapped_column(
+        ForeignKey("kb_chunk.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    embedding: Mapped[list[float]] = mapped_column(Vector(1024))
+    model_name: Mapped[str] = mapped_column(String(100), index=True)
+
+    chunk: Mapped[KnowledgeChunk] = relationship(back_populates="embedding")

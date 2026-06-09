@@ -3,6 +3,7 @@ import uuid
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.tasks.document_index_task import index_document
 from app.tasks.document_parse_task import parse_document_file
 
 
@@ -79,6 +80,23 @@ def test_knowledge_document_review_and_file_flow() -> None:
         assert update_response.status_code == 200, update_response.text
         assert update_response.json()["version_no"] == 2
 
+        index_result = index_document.run(document_id)
+        assert index_result["chunk_count"] >= 1
+
+        chunks = client.get(
+            f"/api/v1/documents/{document_id}/chunks", headers=headers
+        )
+        assert chunks.status_code == 200, chunks.text
+        assert any("Version two" in item["content"] for item in chunks.json())
+
+        semantic = client.post(
+            "/api/v1/search/semantic",
+            headers=headers,
+            json={"query": "Version two", "space_id": space_id, "limit": 5},
+        )
+        assert semantic.status_code == 200, semantic.text
+        assert semantic.json()["items"][0]["document_id"] == document_id
+
         versions = client.get(
             f"/api/v1/documents/{document_id}/versions", headers=headers
         )
@@ -115,6 +133,8 @@ def test_knowledge_document_review_and_file_flow() -> None:
 
         task_result = parse_document_file.run(file_id)
         assert task_result["status"] == "completed"
+        file_index_result = index_document.run(document_id, file_id)
+        assert file_index_result["chunk_count"] == 1
 
         parse_status = client.get(f"/api/v1/files/{file_id}/parse", headers=headers)
         assert parse_status.status_code == 200

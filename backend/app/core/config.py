@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     minio_bucket: str = "knowsphere-documents"
     max_upload_size_mb: int = 100
     document_parse_timeout_seconds: int = 300
+    document_chunk_size: int = 800
+    document_chunk_overlap: int = 120
+    embedding_provider: str = "hash"
+    embedding_model: str = "bge-m3"
+    embedding_dimension: int = Field(default=1024, ge=1024, le=1024)
+    embedding_base_url: str = "http://localhost:11434"
+    embedding_timeout_seconds: int = 120
     access_token_minutes: int = 30
     refresh_token_days: int = 7
     cors_origins: list[str] = ["http://localhost:5173"]
