@@ -1,21 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Collection, Key, OfficeBuilding, SwitchButton, UserFilled } from '@element-plus/icons-vue'
+import {
+  Collection,
+  Files,
+  Key,
+  Switch,
+  OfficeBuilding,
+  SwitchButton,
+  UserFilled,
+} from '@element-plus/icons-vue'
+import { useI18n } from '@/composables/useI18n'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const { t, toggleLocale } = useI18n()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
-    '/admin/users': '用户管理',
-    '/admin/departments': '部门管理',
-    '/admin/roles': '角色权限',
-    '/admin/grants': '数据权限',
+    '/knowledge': t('knowledgeWorkspace'),
+    '/admin/users': t('userManagement'),
+    '/admin/departments': t('departmentManagement'),
+    '/admin/roles': t('rolePermissions'),
+    '/admin/grants': t('dataPermissions'),
   }
-  return titles[route.path] ?? '管理中心'
+  return titles[route.path] ?? t('adminCenter')
 })
 
 async function logout() {
@@ -29,42 +40,49 @@ async function logout() {
     <ElAside class="sidebar" width="240px">
       <div class="brand">
         <span class="brand-mark">✦</span>
-        <span>KnowSphere</span>
+        <span>{{ t('brandName') }}</span>
       </div>
-      <p class="menu-caption">工作空间管理</p>
+      <p class="menu-caption">{{ t('workspaceManagement') }}</p>
       <ElMenu router :default-active="route.path" class="menu">
+        <ElMenuItem v-if="auth.hasPermission('document.view')" index="/knowledge">
+          <ElIcon><Files /></ElIcon>
+          <span>{{ t('knowledgeWorkspace') }}</span>
+        </ElMenuItem>
         <ElMenuItem v-if="auth.hasPermission('user.manage')" index="/admin/users">
           <ElIcon><UserFilled /></ElIcon>
-          <span>用户管理</span>
+          <span>{{ t('userManagement') }}</span>
         </ElMenuItem>
         <ElMenuItem v-if="auth.hasPermission('department.manage')" index="/admin/departments">
           <ElIcon><OfficeBuilding /></ElIcon>
-          <span>部门管理</span>
+          <span>{{ t('departmentManagement') }}</span>
         </ElMenuItem>
         <ElMenuItem v-if="auth.hasPermission('rbac.manage')" index="/admin/roles">
           <ElIcon><Key /></ElIcon>
-          <span>角色权限</span>
+          <span>{{ t('rolePermissions') }}</span>
         </ElMenuItem>
         <ElMenuItem v-if="auth.hasPermission('rbac.manage')" index="/admin/grants">
           <ElIcon><Collection /></ElIcon>
-          <span>数据权限</span>
+          <span>{{ t('dataPermissions') }}</span>
         </ElMenuItem>
       </ElMenu>
       <div class="sidebar-footer">
         <span class="status-dot"></span>
-        服务运行中
+        {{ t('serviceRunning') }}
       </div>
     </ElAside>
     <ElContainer>
       <ElHeader class="header">
         <div>
-          <p>KnowSphere Console</p>
+          <p>{{ t('consoleName') }}</p>
           <h1>{{ pageTitle }}</h1>
         </div>
         <div class="account">
           <span class="avatar">{{ (auth.user?.display_name ?? auth.user?.username ?? 'A')[0] }}</span>
           <span class="account-name">{{ auth.user?.display_name ?? auth.user?.username }}</span>
-          <ElButton class="logout" :icon="SwitchButton" @click="logout">退出登录</ElButton>
+          <ElButton class="language" :icon="Switch" @click="toggleLocale">
+            {{ t('switchLanguage') }}
+          </ElButton>
+          <ElButton class="logout" :icon="SwitchButton" @click="logout">{{ t('logout') }}</ElButton>
         </div>
       </ElHeader>
       <ElMain class="content">
@@ -77,15 +95,13 @@ async function logout() {
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  background: var(--ks-canvas);
+  background: #edf3ef;
 }
 
 .sidebar {
   position: relative;
   color: white;
-  background:
-    radial-gradient(circle at 20% 10%, rgb(57 147 116 / 18%), transparent 28%),
-    #102a21;
+  background: #102b22;
 }
 
 .brand {
@@ -112,7 +128,7 @@ async function logout() {
 
 .menu-caption {
   margin: 18px 24px 10px;
-  color: #6f9e8e;
+  color: #8db4a6;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -127,7 +143,7 @@ async function logout() {
   height: 48px;
   margin: 5px 12px;
   border-radius: 10px;
-  color: #a9c5bb;
+  color: #b9d0c7;
 }
 
 :deep(.el-menu-item:hover) {
@@ -136,8 +152,8 @@ async function logout() {
 }
 
 :deep(.el-menu-item.is-active) {
-  color: #dff9ef;
-  background: #1d493b;
+  color: #ffffff;
+  background: #1d4d3d;
 }
 
 .sidebar-footer {
@@ -148,7 +164,7 @@ async function logout() {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #8db6a8;
+  color: #a6c7bc;
   font-size: 12px;
 }
 
@@ -166,13 +182,14 @@ async function logout() {
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  background: rgb(255 255 255 / 88%);
+  background: #ffffff;
   border-bottom: 1px solid var(--ks-border);
+  box-shadow: 0 2px 10px rgb(20 47 38 / 4%);
 }
 
 .header p {
   margin: 0 0 3px;
-  color: var(--ks-muted);
+  color: #536960;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -202,15 +219,17 @@ async function logout() {
 }
 
 .account-name {
-  color: #33483f;
+  color: #263e34;
   font-size: 14px;
   font-weight: 600;
 }
 
-.logout {
+.logout,
+.language {
   margin-left: 8px;
   border-color: var(--ks-border);
-  color: #53675e;
+  color: #344d43;
+  background: #ffffff;
 }
 
 .content {

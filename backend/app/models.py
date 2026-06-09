@@ -17,6 +17,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, TimestampMixin
 
+# Import knowledge-domain models so Alembic sees their metadata.
+from app.knowledge_models import (  # noqa: E402, F401
+    Category,
+    Document,
+    DocumentFile,
+    DocumentVersion,
+    KnowledgeSpace,
+    Tag,
+)
+
 
 class UserStatus(StrEnum):
     ACTIVE = "active"

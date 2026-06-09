@@ -38,12 +38,15 @@ async def get_current_user(db: DB, token: Annotated[str, Depends(oauth2_scheme)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def has_permission(user: User, code: str) -> bool:
+    if user.is_superuser:
+        return True
+    return any(permission.code == code for role in user.roles for permission in role.permissions)
+
+
 def require_permission(code: str) -> Callable:
     async def dependency(user: CurrentUser) -> User:
-        if user.is_superuser:
-            return user
-        codes = {permission.code for role in user.roles for permission in role.permissions}
-        if code not in codes:
+        if not has_permission(user, code):
             raise AppError("permission_denied", f"Permission '{code}' is required", 403)
         return user
 

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useI18n } from '@/composables/useI18n'
 
 const router = useRouter()
+const { t } = useI18n()
 </script>
 
 <template>
   <main class="forbidden-page">
-    <ElResult icon="warning" title="无权访问" sub-title="当前账号没有访问该页面所需的权限">
+    <ElResult icon="warning" :title="t('forbidden')" :sub-title="t('forbiddenDescription')">
       <template #extra>
-        <ElButton type="primary" @click="router.back()">返回</ElButton>
+        <ElButton type="primary" @click="router.back()">{{ t('back') }}</ElButton>
       </template>
     </ElResult>
   </main>

@@ -30,5 +30,52 @@ npm install
 npm run dev
 ```
 
+Start the document parser worker in another terminal:
+
+```powershell
+cd backend
+.\.venv\Scripts\python run_worker.py
+```
+
+`backend/run_worker.py` can also be launched directly from PyCharm. Use the
+backend virtual environment and set the working directory to `backend`.
+
 Default administrator credentials are configured through `FIRST_SUPERUSER_*`.
 
+## Run backend in PyCharm
+
+Open `backend/run.py` and select **Run 'run'**. Use
+`backend/.venv/Scripts/python.exe` as the interpreter and set the working
+directory to `backend`.
+
+The entry point listens on `0.0.0.0:8000` by default. These optional
+environment variables can override it:
+
+- `KNOWSPHERE_HOST`
+- `KNOWSPHERE_PORT`
+- `KNOWSPHERE_RELOAD` (`true` or `false`, defaults to `false` for debugging)
+
+## Knowledge workspace
+
+The T15-T26 module includes:
+
+- Knowledge spaces with public, department, and private visibility
+- Nested categories and reusable tags
+- Document creation, editing, version history, review, and archive workflows
+- MinIO-backed attachments with upload, preview, download, and deletion
+- A Vue workspace at `/knowledge` for managing the complete workflow
+
+Uploaded files use the `MINIO_BUCKET` setting and are limited by
+`MAX_UPLOAD_SIZE_MB`. Run `alembic upgrade head` and `python -m app.seed`
+after pulling schema or permission changes.
+
+## Document parsing
+
+The T27-T32 module dispatches uploaded files through RabbitMQ and stores task
+results in PostgreSQL. The worker supports PDF, DOCX, XLSX, CSV, JSON, Markdown,
+and plain text files. Redis is used as the Celery result backend.
+
+Parsing state and extracted text are available through:
+
+- `GET /api/v1/files/{file_id}/parse`
+- `POST /api/v1/files/{file_id}/parse` to retry

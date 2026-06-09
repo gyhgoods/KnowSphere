@@ -1,15 +1,26 @@
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, departments, rbac, users
+from app.api import auth, departments, files, knowledge, rbac, users
 from app.common.exceptions import install_exception_handlers
 from app.core.config import settings
+from app.core.database import engine
 from app.core.logging import configure_logging
 
 configure_logging()
-app = FastAPI(title=settings.app_name, version="0.1.0")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -35,5 +46,12 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-for api_router in (auth.router, users.router, departments.router, rbac.router):
+for api_router in (
+    auth.router,
+    users.router,
+    departments.router,
+    rbac.router,
+    knowledge.router,
+    files.router,
+):
     app.include_router(api_router, prefix="/api/v1")

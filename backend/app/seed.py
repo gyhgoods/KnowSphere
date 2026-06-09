@@ -13,6 +13,16 @@ DEFAULT_PERMISSIONS = [
     ("department.manage", "Manage departments", "department", "manage"),
     ("rbac.manage", "Manage roles and permissions", "rbac", "manage"),
     ("resource.grant", "Manage resource grants", "resource", "grant"),
+    ("space.manage", "Manage knowledge spaces", "space", "manage"),
+    ("category.manage", "Manage knowledge categories", "category", "manage"),
+    ("tag.manage", "Manage knowledge tags", "tag", "manage"),
+    ("document.view", "View documents", "document", "view"),
+    ("document.create", "Create documents", "document", "create"),
+    ("document.edit", "Edit documents", "document", "edit"),
+    ("document.delete", "Delete documents", "document", "delete"),
+    ("document.review", "Review and publish documents", "document", "review"),
+    ("document.download", "Download document files", "document", "download"),
+    ("file.manage", "Upload and remove document files", "file", "manage"),
 ]
 
 
@@ -63,4 +73,3 @@ async def seed() -> None:
 
 if __name__ == "__main__":
     asyncio.run(seed())
-

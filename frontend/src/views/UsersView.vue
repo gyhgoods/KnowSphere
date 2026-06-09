@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, shallowRef } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from '@/composables/useI18n'
 import { adminApi } from '@/services/admin'
 import type { Role, User } from '@/types'
 
+const { t } = useI18n()
 const users = shallowRef<User[]>([])
 const roles = shallowRef<Role[]>([])
 const total = shallowRef(0)
@@ -40,7 +42,7 @@ function openCreate() {
 
 async function create() {
   await adminApi.createUser(form)
-  ElMessage.success('用户已创建')
+  ElMessage.success(t('userCreated'))
   dialogOpen.value = false
   await load()
 }
@@ -58,49 +60,53 @@ onMounted(load)
 <template>
   <ElCard class="page-card">
     <div class="page-header">
-      <h1 class="page-title">用户管理</h1>
-      <ElButton type="primary" @click="openCreate">新建用户</ElButton>
+      <h1 class="page-title">{{ t('userManagement') }}</h1>
+      <ElButton type="primary" @click="openCreate">{{ t('createUser') }}</ElButton>
     </div>
     <ElForm inline @submit.prevent="load">
       <ElFormItem>
-        <ElInput v-model="keyword" clearable placeholder="用户名、姓名或邮箱" />
+        <ElInput v-model="keyword" clearable :placeholder="t('userSearch')" />
       </ElFormItem>
-      <ElButton @click="load">查询</ElButton>
+      <ElButton @click="load">{{ t('query') }}</ElButton>
     </ElForm>
     <ElTable v-loading="loading" :data="users">
-      <ElTableColumn prop="username" label="用户名" />
-      <ElTableColumn prop="display_name" label="姓名" />
-      <ElTableColumn prop="email" label="邮箱" />
-      <ElTableColumn label="角色">
+      <ElTableColumn prop="username" :label="t('username')" />
+      <ElTableColumn prop="display_name" :label="t('displayName')" />
+      <ElTableColumn prop="email" :label="t('email')" />
+      <ElTableColumn :label="t('roles')">
         <template #default="{ row }: { row: User }">
-          {{ row.roles.map((role) => role.name).join('、') || '-' }}
+          {{ row.roles.map((role) => role.name).join(', ') || '-' }}
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="status" label="状态" />
-      <ElTableColumn label="操作" width="120">
+      <ElTableColumn prop="status" :label="t('status')" />
+      <ElTableColumn :label="t('actions')" width="120">
         <template #default="{ row }: { row: User }">
           <ElButton link type="primary" @click="toggleStatus(row)">
-            {{ row.status === 'active' ? '停用' : '启用' }}
+            {{ row.status === 'active' ? t('disabled') : t('enabled') }}
           </ElButton>
         </template>
       </ElTableColumn>
     </ElTable>
-    <div class="count">共 {{ total }} 个用户</div>
+    <div class="count">{{ t('userCount', { count: total }) }}</div>
   </ElCard>
 
-  <ElDialog v-model="dialogOpen" title="新建用户" width="520px">
-    <ElForm label-width="90px">
-      <ElFormItem label="用户名"><ElInput v-model="form.username" /></ElFormItem>
-      <ElFormItem label="姓名"><ElInput v-model="form.display_name" /></ElFormItem>
-      <ElFormItem label="邮箱"><ElInput v-model="form.email" /></ElFormItem>
-      <ElFormItem label="初始密码"><ElInput v-model="form.password" type="password" /></ElFormItem>
-      <ElFormItem label="角色">
+  <ElDialog v-model="dialogOpen" :title="t('createUser')" width="520px">
+    <ElForm label-width="110px">
+      <ElFormItem :label="t('username')"><ElInput v-model="form.username" /></ElFormItem>
+      <ElFormItem :label="t('displayName')"><ElInput v-model="form.display_name" /></ElFormItem>
+      <ElFormItem :label="t('email')"><ElInput v-model="form.email" /></ElFormItem>
+      <ElFormItem :label="t('initialPassword')">
+        <ElInput v-model="form.password" type="password" />
+      </ElFormItem>
+      <ElFormItem :label="t('roles')">
         <ElSelect v-model="form.role_ids" multiple>
           <ElOption v-for="role in roles" :key="role.id" :label="role.name" :value="role.id" />
         </ElSelect>
       </ElFormItem>
     </ElForm>
-    <template #footer><ElButton type="primary" @click="create">创建</ElButton></template>
+    <template #footer>
+      <ElButton type="primary" @click="create">{{ t('create') }}</ElButton>
+    </template>
   </ElDialog>
 </template>
 
@@ -111,4 +117,3 @@ onMounted(load)
   font-size: 13px;
 }
 </style>
-

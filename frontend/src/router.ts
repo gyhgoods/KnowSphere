@@ -17,7 +17,12 @@ const router = createRouter({
       component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },
       children: [
-        { path: '', redirect: '/admin/users' },
+        { path: '', redirect: '/knowledge' },
+        {
+          path: 'knowledge',
+          component: () => import('@/views/KnowledgeWorkspaceView.vue'),
+          meta: { permission: 'document.view' },
+        },
         {
           path: 'admin/users',
           component: () => import('@/views/UsersView.vue'),

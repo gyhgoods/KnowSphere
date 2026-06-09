@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, shallowRef } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from '@/composables/useI18n'
 import { adminApi } from '@/services/admin'
 import type { Permission, Role } from '@/types'
 
+const { t } = useI18n()
 const roles = shallowRef<Role[]>([])
 const permissions = shallowRef<Permission[]>([])
 const dialogOpen = shallowRef(false)
@@ -44,7 +46,7 @@ async function save() {
   } else {
     await adminApi.createRole(form)
   }
-  ElMessage.success('角色已保存')
+  ElMessage.success(t('roleSaved'))
   dialogOpen.value = false
   await load()
 }
@@ -55,31 +57,35 @@ onMounted(load)
 <template>
   <ElCard class="page-card">
     <div class="page-header">
-      <h1 class="page-title">角色权限</h1>
-      <ElButton type="primary" @click="openCreate">新建角色</ElButton>
+      <h1 class="page-title">{{ t('rolePermissions') }}</h1>
+      <ElButton type="primary" @click="openCreate">{{ t('createRole') }}</ElButton>
     </div>
     <ElTable :data="roles">
-      <ElTableColumn prop="code" label="编码" />
-      <ElTableColumn prop="name" label="名称" />
-      <ElTableColumn label="权限">
+      <ElTableColumn prop="code" :label="t('code')" />
+      <ElTableColumn prop="name" :label="t('name')" />
+      <ElTableColumn :label="t('permissions')">
         <template #default="{ row }: { row: Role }">
-          {{ row.permissions.map((item) => item.name).join('、') || '-' }}
+          {{ row.permissions.map((item) => item.name).join(', ') || '-' }}
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="100">
+      <ElTableColumn :label="t('actions')" width="100">
         <template #default="{ row }: { row: Role }">
-          <ElButton link type="primary" @click="openEdit(row)">编辑</ElButton>
+          <ElButton link type="primary" @click="openEdit(row)">{{ t('edit') }}</ElButton>
         </template>
       </ElTableColumn>
     </ElTable>
   </ElCard>
 
-  <ElDialog v-model="dialogOpen" title="角色配置" width="560px">
-    <ElForm label-width="80px">
-      <ElFormItem label="编码"><ElInput v-model="form.code" :disabled="Boolean(editingId)" /></ElFormItem>
-      <ElFormItem label="名称"><ElInput v-model="form.name" /></ElFormItem>
-      <ElFormItem label="说明"><ElInput v-model="form.description" type="textarea" /></ElFormItem>
-      <ElFormItem label="权限">
+  <ElDialog v-model="dialogOpen" :title="t('roleConfig')" width="560px">
+    <ElForm label-width="100px">
+      <ElFormItem :label="t('code')">
+        <ElInput v-model="form.code" :disabled="Boolean(editingId)" />
+      </ElFormItem>
+      <ElFormItem :label="t('name')"><ElInput v-model="form.name" /></ElFormItem>
+      <ElFormItem :label="t('description')">
+        <ElInput v-model="form.description" type="textarea" />
+      </ElFormItem>
+      <ElFormItem :label="t('permissions')">
         <ElSelect v-model="form.permission_ids" multiple filterable>
           <ElOption
             v-for="permission in permissions"
@@ -90,7 +96,8 @@ onMounted(load)
         </ElSelect>
       </ElFormItem>
     </ElForm>
-    <template #footer><ElButton type="primary" @click="save">保存</ElButton></template>
+    <template #footer>
+      <ElButton type="primary" @click="save">{{ t('save') }}</ElButton>
+    </template>
   </ElDialog>
 </template>
-

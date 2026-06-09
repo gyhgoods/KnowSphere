@@ -3,13 +3,14 @@ import { computed, reactive, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Lock, Right, User } from '@element-plus/icons-vue'
 import axios from 'axios'
+import { useI18n } from '@/composables/useI18n'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const { locale: language, t, toggleLocale } = useI18n()
 const submitting = shallowRef(false)
-const language = shallowRef<'zh' | 'en'>('zh')
 const errorMessage = shallowRef('')
 const form = reactive({ username: '', password: '' })
 
@@ -76,7 +77,7 @@ async function submit() {
 }
 
 function toggleLanguage() {
-  language.value = language.value === 'zh' ? 'en' : 'zh'
+  toggleLocale()
 }
 </script>
 
@@ -91,7 +92,7 @@ function toggleLanguage() {
             <circle cx="7" cy="23" r="2" />
           </svg>
         </span>
-        <strong>KnowSphere</strong>
+        <strong>{{ t('brandName') }}</strong>
       </div>
 
       <div class="story-content">
@@ -125,7 +126,10 @@ function toggleLanguage() {
 
     <section class="form-panel">
       <button class="language-button" type="button" @click="toggleLanguage">
-        <span aria-hidden="true">文A</span>
+        <svg class="language-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5h10M9 3v2m3 0c-1 4-3.2 7-6.5 9M7 9c1.3 2 3 3.7 5.3 5" />
+          <path d="m14 21 3.2-8 3.3 8m-5.3-3h4.1" />
+        </svg>
         {{ copy.language }}
       </button>
 
@@ -192,18 +196,21 @@ function toggleLanguage() {
 <style scoped>
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(520px, 56%) minmax(480px, 44%);
-  background: var(--ks-canvas);
+  grid-template-columns: minmax(0, 56%) minmax(420px, 44%);
+  background: #edf3ef;
 }
 
 .story-panel {
+  min-width: 0;
   min-height: 100vh;
-  padding: 26px 44px;
+  min-height: 100dvh;
+  padding: clamp(22px, 2.3vw, 34px) clamp(28px, 3.5vw, 54px);
+  overflow-x: hidden;
+  overflow-y: auto;
   color: white;
-  background:
-    radial-gradient(circle at 76% 18%, rgb(50 132 106 / 16%), transparent 30%),
-    #102a21;
+  background: #112b22;
 }
 
 .brand {
@@ -211,12 +218,12 @@ function toggleLanguage() {
   align-items: center;
   gap: 14px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 25px;
+  font-size: clamp(22px, 1.7vw, 28px);
 }
 
 .brand-mark {
-  width: 50px;
-  height: 50px;
+  width: clamp(46px, 3.1vw, 52px);
+  height: clamp(46px, 3.1vw, 52px);
   display: grid;
   place-items: center;
   border-radius: 12px;
@@ -234,12 +241,13 @@ function toggleLanguage() {
 }
 
 .story-content {
-  width: min(650px, 80%);
-  margin: clamp(120px, 17vh, 210px) auto 0;
+  width: auto;
+  max-width: 650px;
+  margin: clamp(72px, 11vh, 132px) 0 48px clamp(42px, 8.5vw, 126px);
 }
 
 .eyebrow {
-  margin: 0 0 32px;
+  margin: 0 0 clamp(20px, 3vh, 32px);
   color: var(--ks-mint);
   font-size: 13px;
   font-weight: 800;
@@ -248,22 +256,22 @@ function toggleLanguage() {
 
 .story-content h1 {
   margin: 0;
-  font-size: clamp(46px, 4.1vw, 72px);
+  font-size: clamp(40px, 4vw, 68px);
   line-height: 1.14;
   letter-spacing: -0.035em;
 }
 
 .story-summary {
-  margin: 34px 0 0;
-  color: #b7cec5;
-  font-size: 19px;
+  margin: clamp(22px, 3.5vh, 34px) 0 0;
+  color: #c5d8d0;
+  font-size: clamp(16px, 1.25vw, 19px);
   line-height: 1.8;
 }
 
 .feature-list {
   display: grid;
-  gap: 22px;
-  margin-top: 54px;
+  gap: clamp(14px, 2vh, 22px);
+  margin-top: clamp(30px, 5vh, 54px);
 }
 
 .feature {
@@ -273,23 +281,23 @@ function toggleLanguage() {
 }
 
 .feature-icon {
-  flex: 0 0 50px;
-  height: 50px;
+  flex: 0 0 clamp(44px, 3vw, 50px);
+  height: clamp(44px, 3vw, 50px);
   display: grid;
   place-items: center;
-  border: 1px solid #315c4d;
+  border: 1px solid #386657;
   border-radius: 12px;
   color: var(--ks-mint);
-  background: #17392e;
+  background: #183c30;
 }
 
 .feature-icon svg {
-  width: 25px;
+  width: 24px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.7;
+  stroke-width: 1.9;
 }
 
 .feature span:last-child {
@@ -302,56 +310,67 @@ function toggleLanguage() {
 }
 
 .feature small {
-  color: #7eaa9b;
+  color: #95b9ac;
   font-size: 13px;
 }
 
 .form-panel {
   position: relative;
+  min-width: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 80px 7vw;
-  background:
-    radial-gradient(circle at 52% 49%, rgb(181 205 195 / 32%), transparent 34%),
-    #f1f5f2;
+  padding: clamp(84px, 10vh, 112px) clamp(28px, 6vw, 94px) 48px;
+  background: #edf3ef;
 }
 
 .language-button {
   position: absolute;
-  top: 26px;
-  right: 46px;
+  top: clamp(20px, 2.5vw, 28px);
+  right: clamp(22px, 3.8vw, 50px);
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 12px 16px;
-  border: 1px solid #d2ddd7;
+  border: 1px solid #c8d4ce;
   border-radius: 11px;
-  color: #42584f;
-  background: rgb(255 255 255 / 78%);
+  color: #30483e;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgb(17 43 34 / 5%);
   cursor: pointer;
+}
+
+.language-icon {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .login-card {
   width: min(650px, 100%);
   overflow: hidden;
-  border: 1px solid #dce4df;
+  border: 1px solid #ccd7d1;
   border-radius: 13px;
   background: white;
-  box-shadow: 0 28px 70px rgb(19 52 41 / 16%);
+  box-shadow: 0 22px 48px rgb(18 45 36 / 14%);
 }
 
 .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 32px 38px 0;
+  padding: clamp(24px, 3.5vh, 32px) clamp(26px, 3vw, 38px) 0;
 }
 
 .auth-tab {
   height: 58px;
   border: 0;
-  border-bottom: 1px solid #dbe2de;
-  color: #718078;
+  border-bottom: 1px solid #d3ddd8;
+  color: #62736b;
   background: transparent;
   font-size: 17px;
   font-weight: 700;
@@ -363,7 +382,7 @@ function toggleLanguage() {
 }
 
 .form-content {
-  padding: 38px;
+  padding: clamp(28px, 4vh, 38px);
 }
 
 .form-content h2 {
@@ -375,7 +394,7 @@ function toggleLanguage() {
 
 .form-subtitle {
   margin: 12px 0 28px;
-  color: var(--ks-muted);
+  color: #5d7067;
 }
 
 :deep(.el-form-item) {
@@ -391,7 +410,8 @@ function toggleLanguage() {
   min-height: 58px;
   padding: 0 17px;
   border-radius: 11px;
-  box-shadow: 0 0 0 1px #d7e0db inset;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #cbd7d1 inset;
 }
 
 :deep(.el-input__wrapper.is-focus) {
@@ -400,7 +420,7 @@ function toggleLanguage() {
 
 :deep(.el-input__prefix) {
   margin-right: 10px;
-  color: #91a198;
+  color: #74887e;
   font-size: 21px;
 }
 
@@ -430,7 +450,7 @@ function toggleLanguage() {
 .demo-account {
   margin: 24px 0 0;
   text-align: center;
-  color: #819087;
+  color: #687a71;
   font-size: 13px;
 }
 
@@ -442,26 +462,27 @@ function toggleLanguage() {
 
 .demo-account {
   margin-top: 14px;
-  color: #a1aba5;
+  color: #7d8c84;
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 1120px) {
   .login-page {
     grid-template-columns: 1fr;
   }
 
   .story-panel {
     min-height: auto;
-    padding-bottom: 70px;
+    padding-bottom: 56px;
   }
 
   .story-content {
     width: min(720px, 92%);
-    margin-top: 80px;
+    margin: 56px auto 0;
   }
 
   .form-panel {
-    min-height: 760px;
+    min-height: min(760px, 100dvh);
+    padding-inline: max(24px, 12vw);
   }
 }
 
@@ -472,20 +493,20 @@ function toggleLanguage() {
 
   .story-content {
     width: 100%;
-    margin-top: 70px;
+    margin: 52px 0 0;
   }
 
   .story-content h1 {
-    font-size: 40px;
+    font-size: clamp(34px, 10vw, 42px);
   }
 
   .form-panel {
-    min-height: 700px;
-    padding: 90px 18px 40px;
+    min-height: 680px;
+    padding: 86px 16px 34px;
   }
 
   .language-button {
-    right: 18px;
+    right: 16px;
   }
 
   .auth-tabs {
@@ -493,7 +514,52 @@ function toggleLanguage() {
   }
 
   .form-content {
-    padding: 30px 24px;
+    padding: 28px 22px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 1121px) {
+  .story-content {
+    margin-top: 48px;
+    margin-bottom: 30px;
+  }
+
+  .eyebrow {
+    margin-bottom: 18px;
+  }
+
+  .story-summary {
+    margin-top: 20px;
+    line-height: 1.6;
+  }
+
+  .feature-list {
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  .form-panel {
+    padding-top: 68px;
+    padding-bottom: 24px;
+  }
+
+  .auth-tabs {
+    padding-top: 20px;
+  }
+
+  .auth-tab {
+    height: 50px;
+  }
+
+  .form-content {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  :deep(.el-input__wrapper),
+  .submit {
+    min-height: 52px;
+    height: 52px;
   }
 }
 </style>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, shallowRef } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from '@/composables/useI18n'
 import { adminApi } from '@/services/admin'
 import type { Department } from '@/types'
 
+const { t } = useI18n()
 const departments = shallowRef<Department[]>([])
 const dialogOpen = shallowRef(false)
 const form = reactive({ name: '', parent_id: null as number | null, sort: 0 })
@@ -19,7 +21,7 @@ function openCreate(parentId: number | null = null) {
 
 async function create() {
   await adminApi.createDepartment(form)
-  ElMessage.success('部门已创建')
+  ElMessage.success(t('departmentCreated'))
   dialogOpen.value = false
   await load()
 }
@@ -30,8 +32,8 @@ onMounted(load)
 <template>
   <ElCard class="page-card">
     <div class="page-header">
-      <h1 class="page-title">部门管理</h1>
-      <ElButton type="primary" @click="openCreate()">新建部门</ElButton>
+      <h1 class="page-title">{{ t('departmentManagement') }}</h1>
+      <ElButton type="primary" @click="openCreate()">{{ t('createDepartment') }}</ElButton>
     </div>
     <ElTable
       :data="departments"
@@ -39,29 +41,34 @@ onMounted(load)
       default-expand-all
       :tree-props="{ children: 'children' }"
     >
-      <ElTableColumn prop="name" label="部门名称" />
-      <ElTableColumn prop="sort" label="排序" width="100" />
-      <ElTableColumn label="状态" width="120">
+      <ElTableColumn prop="name" :label="t('departmentName')" />
+      <ElTableColumn prop="sort" :label="t('sort')" width="100" />
+      <ElTableColumn :label="t('status')" width="120">
         <template #default="{ row }: { row: Department }">
           <ElTag :type="row.is_active ? 'success' : 'info'">
-            {{ row.is_active ? '启用' : '停用' }}
+            {{ row.is_active ? t('enabled') : t('disabled') }}
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="140">
+      <ElTableColumn :label="t('actions')" width="180">
         <template #default="{ row }: { row: Department }">
-          <ElButton link type="primary" @click="openCreate(row.id)">添加子部门</ElButton>
+          <ElButton link type="primary" @click="openCreate(row.id)">
+            {{ t('addChildDepartment') }}
+          </ElButton>
         </template>
       </ElTableColumn>
     </ElTable>
   </ElCard>
 
-  <ElDialog v-model="dialogOpen" title="新建部门" width="480px">
-    <ElForm label-width="80px">
-      <ElFormItem label="名称"><ElInput v-model="form.name" /></ElFormItem>
-      <ElFormItem label="排序"><ElInputNumber v-model="form.sort" :min="0" /></ElFormItem>
+  <ElDialog v-model="dialogOpen" :title="t('createDepartment')" width="480px">
+    <ElForm label-width="100px">
+      <ElFormItem :label="t('name')"><ElInput v-model="form.name" /></ElFormItem>
+      <ElFormItem :label="t('sort')">
+        <ElInputNumber v-model="form.sort" :min="0" />
+      </ElFormItem>
     </ElForm>
-    <template #footer><ElButton type="primary" @click="create">创建</ElButton></template>
+    <template #footer>
+      <ElButton type="primary" @click="create">{{ t('create') }}</ElButton>
+    </template>
   </ElDialog>
 </template>
-

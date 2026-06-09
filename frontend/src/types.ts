@@ -57,3 +57,93 @@ export interface Page<T> {
   page: number
   page_size: number
 }
+
+export type SpaceVisibility = 'private' | 'department' | 'public'
+export type DocumentStatus = 'draft' | 'in_review' | 'published' | 'rejected' | 'archived'
+
+export interface KnowledgeSpace {
+  id: number
+  name: string
+  code: string
+  description: string | null
+  visibility: SpaceVisibility
+  department_id: number | null
+  created_by: number
+  is_active: boolean
+  created_at: string
+}
+
+export interface Category {
+  id: number
+  space_id: number
+  parent_id: number | null
+  name: string
+  sort: number
+  children: readonly Category[]
+}
+
+export interface Tag {
+  id: number
+  name: string
+  color: string
+  usage_count: number
+}
+
+export interface KnowledgeDocument {
+  id: number
+  space_id: number
+  category_id: number | null
+  title: string
+  content: string
+  content_format: 'markdown' | 'plain' | 'html'
+  status: DocumentStatus
+  author_id: number
+  reviewer_id: number | null
+  review_comment: string | null
+  version_no: number
+  tags: readonly Tag[]
+  created_at: string
+  updated_at: string
+}
+
+export interface DocumentVersion {
+  id: number
+  document_id: number
+  version_no: number
+  title: string
+  content: string
+  content_format: string
+  created_by: number
+  created_at: string
+}
+
+export interface DocumentFile {
+  id: number
+  document_id: number
+  file_name: string
+  mime_type: string
+  file_size: number
+  checksum: string
+  uploaded_by: number
+  parse_status: 'queued' | 'processing' | 'completed' | 'failed' | 'unsupported'
+  parse_task_id: string | null
+  parse_error: string | null
+  parsed_text_length: number
+  created_at: string
+}
+
+export interface FileParseResult {
+  id: number
+  parse_status: DocumentFile['parse_status']
+  parse_task_id: string | null
+  parse_error: string | null
+  parsed_text: string | null
+  parse_started_at: string | null
+  parse_completed_at: string | null
+}
+
+export interface FileAccess {
+  url: string
+  expires_in: number
+  previewable: boolean
+}

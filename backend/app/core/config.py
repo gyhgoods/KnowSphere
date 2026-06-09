@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     app_secret_key: str = Field(min_length=32)
     database_url: str
     redis_url: str = "redis://localhost:6379/0"
+    rabbitmq_url: str = "amqp://knowsphere:knowsphere@localhost:5672//"
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "knowsphere"
+    minio_secret_key: str = "knowsphere-secret"
+    minio_secure: bool = False
+    minio_bucket: str = "knowsphere-documents"
+    max_upload_size_mb: int = 100
+    document_parse_timeout_seconds: int = 300
     access_token_minutes: int = 30
     refresh_token_days: int = 7
     cors_origins: list[str] = ["http://localhost:5173"]
