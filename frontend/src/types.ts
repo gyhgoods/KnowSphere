@@ -147,3 +147,53 @@ export interface FileAccess {
   expires_in: number
   previewable: boolean
 }
+
+export type SearchMode = 'hybrid' | 'semantic' | 'lexical'
+export type SearchSourceType = 'all' | 'document' | 'file'
+
+export interface SearchFilters {
+  query: string
+  mode: SearchMode
+  space_id: number | null
+  category_id: number | null
+  status: DocumentStatus | null
+  tag_ids: number[]
+  source_type: SearchSourceType
+  updated_range: [string, string] | null
+  semantic_weight: number
+  limit: number
+}
+
+export interface SearchResultScore {
+  semantic: number
+  lexical: number
+  fused: number
+  rerank: number
+}
+
+export interface SearchResult {
+  chunk_id: number
+  document_id: number
+  document_title: string
+  space_id: number
+  category_id: number | null
+  status: DocumentStatus
+  tag_ids: number[]
+  tag_names: string[]
+  file_id: number | null
+  source_name: string
+  source_type: Exclude<SearchSourceType, 'all'>
+  content: string
+  updated_at: string
+  score: SearchResultScore
+  explanations: string[]
+}
+
+export interface SearchResponse {
+  query: string
+  mode: SearchMode
+  model: string
+  total_candidates: number
+  took_ms: number
+  items: SearchResult[]
+}

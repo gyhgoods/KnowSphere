@@ -97,6 +97,24 @@ def test_knowledge_document_review_and_file_flow() -> None:
         assert semantic.status_code == 200, semantic.text
         assert semantic.json()["items"][0]["document_id"] == document_id
 
+        hybrid = client.post(
+            "/api/v1/search/hybrid",
+            headers=headers,
+            json={
+                "query": "Version two",
+                "space_id": space_id,
+                "category_id": child_category_id,
+                "tag_ids": [tag_id],
+                "source_type": "document",
+                "mode": "hybrid",
+                "limit": 5,
+            },
+        )
+        assert hybrid.status_code == 200, hybrid.text
+        assert hybrid.json()["items"][0]["document_id"] == document_id
+        assert hybrid.json()["items"][0]["score"]["rerank"] > 0
+        assert "content_phrase" in hybrid.json()["items"][0]["explanations"]
+
         versions = client.get(
             f"/api/v1/documents/{document_id}/versions", headers=headers
         )

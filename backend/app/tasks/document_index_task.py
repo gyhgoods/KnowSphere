@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 
 from celery import Task
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -23,6 +23,8 @@ async def index_document_source(document_id: int, file_id: int | None = None) ->
     session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     try:
         async with session_factory() as session:
+            lock_key = (document_id << 32) | (file_id or 0)
+            await session.execute(select(func.pg_advisory_xact_lock(lock_key)))
             document = await session.get(Document, document_id)
             if not document or document.is_deleted:
                 return 0

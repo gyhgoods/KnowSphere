@@ -5,6 +5,7 @@ import {
   Collection,
   Files,
   Key,
+  Search,
   Switch,
   OfficeBuilding,
   SwitchButton,
@@ -21,6 +22,7 @@ const { t, toggleLocale } = useI18n()
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
     '/knowledge': t('knowledgeWorkspace'),
+    '/search': t('unifiedSearch'),
     '/admin/users': t('userManagement'),
     '/admin/departments': t('departmentManagement'),
     '/admin/roles': t('rolePermissions'),
@@ -47,6 +49,10 @@ async function logout() {
         <ElMenuItem v-if="auth.hasPermission('document.view')" index="/knowledge">
           <ElIcon><Files /></ElIcon>
           <span>{{ t('knowledgeWorkspace') }}</span>
+        </ElMenuItem>
+        <ElMenuItem v-if="auth.hasPermission('document.view')" index="/search">
+          <ElIcon><Search /></ElIcon>
+          <span>{{ t('unifiedSearch') }}</span>
         </ElMenuItem>
         <ElMenuItem v-if="auth.hasPermission('user.manage')" index="/admin/users">
           <ElIcon><UserFilled /></ElIcon>

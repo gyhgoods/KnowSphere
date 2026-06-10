@@ -24,6 +24,11 @@ const router = createRouter({
           meta: { permission: 'document.view' },
         },
         {
+          path: 'search',
+          component: () => import('@/views/UnifiedSearchView.vue'),
+          meta: { permission: 'document.view' },
+        },
+        {
           path: 'admin/users',
           component: () => import('@/views/UsersView.vue'),
           meta: { permission: 'user.manage' },

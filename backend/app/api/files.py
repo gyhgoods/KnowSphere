@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
+from sqlalchemy import func, select
 from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies import DB, CurrentUser, has_permission
@@ -163,6 +164,8 @@ async def delete_file(
     if not has_permission(user, "file.manage"):
         raise AppError("permission_denied", "Permission 'file.manage' is required", 403)
     record = await get_file_with_access(file_id, db, user, "edit")
+    lock_key = (record.document_id << 32) | record.id
+    await db.execute(select(func.pg_advisory_xact_lock(lock_key)))
     await run_in_threadpool(storage.delete, record.object_name)
     await db.delete(record)
     await db.commit()

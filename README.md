@@ -101,3 +101,18 @@ Relevant endpoints:
 - `POST /api/v1/documents/{document_id}/chunks/rebuild`
 - `DELETE /api/v1/chunks/{chunk_id}`
 - `POST /api/v1/search/semantic`
+
+## Hybrid enterprise search
+
+T41-T43 add lexical retrieval, weighted semantic/keyword score fusion, metadata
+filters, deterministic reranking, and a bilingual unified search interface at
+`/search`. Results expose their semantic, lexical, fused, and reranked scores
+along with human-readable match explanations.
+
+The unified endpoint is:
+
+- `POST /api/v1/search/hybrid`
+
+Supported filters include knowledge space, category, document status, tags,
+document or attachment source, and updated-time range. Search results continue
+to use the existing document and space permission checks before being returned.

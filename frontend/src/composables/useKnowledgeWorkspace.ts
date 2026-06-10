@@ -17,14 +17,30 @@ export function useKnowledgeWorkspace() {
     () => spaces.value.find((space) => space.id === selectedSpaceId.value) ?? null,
   )
 
-  async function initialize() {
+  async function initialize(options?: {
+    spaceId?: number | null
+    categoryId?: number | null
+    keyword?: string
+  }) {
     loading.value = true
     try {
       ;[spaces.value, tags.value] = await Promise.all([knowledgeApi.spaces(), knowledgeApi.tags()])
+      if (options?.keyword) keyword.value = options.keyword
+      if (options?.spaceId && spaces.value.some((space) => space.id === options.spaceId)) {
+        selectedSpaceId.value = options.spaceId
+      }
       if (!selectedSpaceId.value && spaces.value.length) {
         selectedSpaceId.value = spaces.value[0].id
       }
-      if (selectedSpaceId.value) await selectSpace(selectedSpaceId.value)
+      if (selectedSpaceId.value) {
+        await selectSpace(selectedSpaceId.value)
+        if (
+          options?.categoryId &&
+          categories.value.some((category) => category.id === options.categoryId)
+        ) {
+          await selectCategory(options.categoryId)
+        }
+      }
     } finally {
       loading.value = false
     }

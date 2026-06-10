@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, shallowRef } from 'vue'
+import { useRoute } from 'vue-router'
 import { DocumentAdd, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DocumentEditorDialog from '@/components/knowledge/DocumentEditorDialog.vue'
@@ -13,6 +14,7 @@ import { knowledgeApi } from '@/services/knowledge'
 import type { Category, KnowledgeDocument, KnowledgeSpace } from '@/types'
 
 const workspace = useKnowledgeWorkspace()
+const route = useRoute()
 const { t } = useI18n()
 const editorOpen = shallowRef(false)
 const filesOpen = shallowRef(false)
@@ -22,7 +24,13 @@ const editingDocument = shallowRef<KnowledgeDocument | null>(null)
 const activeDocument = shallowRef<KnowledgeDocument | null>(null)
 const tagForm = reactive({ name: '', color: '#087f61' })
 
-onMounted(workspace.initialize)
+onMounted(() =>
+  workspace.initialize({
+    spaceId: Number(route.query.space_id) || null,
+    categoryId: Number(route.query.category_id) || null,
+    keyword: typeof route.query.keyword === 'string' ? route.query.keyword : '',
+  }),
+)
 
 function openCreateDocument() {
   editingDocument.value = null
