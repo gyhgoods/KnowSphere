@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, departments, files, knowledge, rbac, search, users
+from app.api import ai, auth, departments, files, graph, knowledge, rbac, search, users
 from app.common.exceptions import install_exception_handlers
 from app.core.config import settings
 from app.core.database import engine
@@ -54,5 +54,7 @@ for api_router in (
     knowledge.router,
     files.router,
     search.router,
+    ai.router,
+    graph.router,
 ):
     app.include_router(api_router, prefix="/api/v1")

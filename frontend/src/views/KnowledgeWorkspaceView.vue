@@ -24,13 +24,23 @@ const editingDocument = shallowRef<KnowledgeDocument | null>(null)
 const activeDocument = shallowRef<KnowledgeDocument | null>(null)
 const tagForm = reactive({ name: '', color: '#087f61' })
 
-onMounted(() =>
-  workspace.initialize({
+onMounted(async () => {
+  const documentId = Number(route.query.document_id) || null
+  if (documentId) {
+    const document = await knowledgeApi.document(documentId)
+    await workspace.initialize({
+      spaceId: document.space_id,
+      categoryId: document.category_id,
+      keyword: document.title,
+    })
+    return
+  }
+  await workspace.initialize({
     spaceId: Number(route.query.space_id) || null,
     categoryId: Number(route.query.category_id) || null,
     keyword: typeof route.query.keyword === 'string' ? route.query.keyword : '',
-  }),
-)
+  })
+})
 
 function openCreateDocument() {
   editingDocument.value = null

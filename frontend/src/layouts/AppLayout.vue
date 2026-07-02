@@ -23,6 +23,8 @@ const pageTitle = computed(() => {
   const titles: Record<string, string> = {
     '/knowledge': t('knowledgeWorkspace'),
     '/search': t('unifiedSearch'),
+    '/assistant': t('aiAssistant'),
+    '/graph': t('knowledgeGraph'),
     '/admin/users': t('userManagement'),
     '/admin/departments': t('departmentManagement'),
     '/admin/roles': t('rolePermissions'),
@@ -53,6 +55,14 @@ async function logout() {
         <ElMenuItem v-if="auth.hasPermission('document.view')" index="/search">
           <ElIcon><Search /></ElIcon>
           <span>{{ t('unifiedSearch') }}</span>
+        </ElMenuItem>
+        <ElMenuItem v-if="auth.hasPermission('document.view')" index="/assistant">
+          <ElIcon><Files /></ElIcon>
+          <span>{{ t('aiAssistant') }}</span>
+        </ElMenuItem>
+        <ElMenuItem v-if="auth.hasPermission('document.view')" index="/graph">
+          <ElIcon><Collection /></ElIcon>
+          <span>{{ t('knowledgeGraph') }}</span>
         </ElMenuItem>
         <ElMenuItem v-if="auth.hasPermission('user.manage')" index="/admin/users">
           <ElIcon><UserFilled /></ElIcon>

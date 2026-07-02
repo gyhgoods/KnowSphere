@@ -1,13 +1,18 @@
 import asyncio
+import uuid
 from datetime import UTC, datetime
+from io import BytesIO
+from pathlib import Path
 
 from celery import Task
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app import models  # noqa: F401
 from app.core.config import settings
 from app.knowledge_models import DocumentFile, FileParseStatus
-from app.services.document_parser import UnsupportedDocumentTypeError, parse_document
+from app.services.document_parser import UnsupportedDocumentTypeError, parse_document_assets
+from app.services.ocr import OCRServiceError, get_ocr_service
 from app.services.storage import get_storage
 from app.tasks.celery_app import celery_app
 
@@ -38,6 +43,72 @@ async def load_file(file_id: int) -> DocumentFile | None:
         await engine.dispose()
 
 
+def image_reference_block(
+    *,
+    index: int,
+    object_name: str,
+    image_name: str,
+    mime_type: str,
+    description: str,
+) -> str:
+    return (
+        f"[[KNOWSPHERE_IMAGE index={index} object={object_name} "
+        f"name={image_name} mime={mime_type}]]\n"
+        f"Image {index}: {description}\n"
+        "[[END_KNOWSPHERE_IMAGE]]"
+    )
+
+
+def image_description(*, base_description: str, ocr_text: str, ocr_error: str | None) -> str:
+    parts = [base_description]
+    if ocr_text:
+        parts.append(f"OCR text recognized by qwen3.5-ocr:\n{ocr_text}")
+    elif ocr_error:
+        parts.append(f"OCR failed: {ocr_error}")
+    else:
+        parts.append("OCR text recognized by qwen3.5-ocr: No text was recognized.")
+    return "\n".join(parts)
+
+
+def append_extracted_images_text(record: DocumentFile, parsed_text: str, content: bytes) -> str:
+    parsed = parse_document_assets(record.file_name, record.mime_type, content)
+    parts = [parsed.text] if parsed.text else []
+    storage = get_storage()
+    ocr_service = get_ocr_service()
+    for image in parsed.images:
+        suffix = Path(image.file_name).suffix.lower() or ".bin"
+        object_name = (
+            f"documents/{record.document_id}/extracted-images/"
+            f"{record.id}/{uuid.uuid4().hex}{suffix}"
+        )
+        storage.upload(
+            object_name,
+            BytesIO(image.content),
+            len(image.content),
+            image.mime_type,
+        )
+        ocr_text = ""
+        ocr_error = None
+        try:
+            ocr_text = ocr_service.recognize(image.content, image.mime_type)
+        except OCRServiceError as exc:
+            ocr_error = str(exc)
+        parts.append(
+            image_reference_block(
+                index=image.index,
+                object_name=object_name,
+                image_name=image.file_name,
+                mime_type=image.mime_type,
+                description=image_description(
+                    base_description=image.description,
+                    ocr_text=ocr_text,
+                    ocr_error=ocr_error,
+                ),
+            )
+        )
+    return "\n\n".join(parts) if parts else parsed_text
+
+
 @celery_app.task(
     bind=True,
     name="documents.parse",
@@ -63,7 +134,7 @@ def parse_document_file(self: Task, file_id: int) -> dict[str, object]:
 
     try:
         content = get_storage().download(record.object_name)
-        parsed_text = parse_document(record.file_name, record.mime_type, content)
+        parsed_text = append_extracted_images_text(record, "", content)
     except UnsupportedDocumentTypeError as exc:
         asyncio.run(
             update_file(

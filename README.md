@@ -116,3 +116,51 @@ The unified endpoint is:
 Supported filters include knowledge space, category, document status, tags,
 document or attachment source, and updated-time range. Search results continue
 to use the existing document and space permission checks before being returned.
+
+## AI assistant and knowledge graph
+
+T44-T50 add a permission-filtered RAG layer, AI question-answering conversations,
+source citations, feedback capture, knowledge-graph extraction, and two frontend
+workspaces:
+
+- `/assistant` for citation-grounded AI answers and conversation history
+- `/graph` for entity relationship exploration
+
+The default RAG provider is `openai`. A user question is first embedded and
+searched against pgvector. KnowSphere sends the top three permission-filtered
+chunks to the OpenAI Responses API and returns source citations. If no vector
+context is found, KnowSphere calls the LLM directly without file citations.
+
+Configure the model before using `/assistant`:
+
+```dotenv
+RAG_PROVIDER=openai
+RAG_CONTEXT_LIMIT=3
+RAG_MIN_SIMILARITY=0.05
+OPENAI_API_KEY=your-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-5.2
+```
+
+Images embedded in DOCX attachments are extracted during parsing, uploaded to
+MinIO, sent to `qwen3.5-ocr`, and indexed as image chunks with OCR text. When AI
+answers cite an image chunk, the frontend shows the image and links it back to
+the source document.
+
+Configure OCR before starting `run_worker.py`:
+
+```dotenv
+QWEN_OCR_ENABLED=true
+QWEN_OCR_API_KEY=your-qwen-or-compatible-api-key
+QWEN_OCR_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+QWEN_OCR_MODEL=qwen3.5-ocr
+```
+
+Relevant endpoints:
+
+- `POST /api/v1/ai/ask`
+- `GET /api/v1/ai/conversations`
+- `GET /api/v1/ai/conversations/{conversation_id}/messages`
+- `POST /api/v1/ai/messages/{message_id}/feedback`
+- `POST /api/v1/graph/extract`
+- `GET /api/v1/graph`

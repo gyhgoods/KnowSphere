@@ -31,6 +31,19 @@ class Settings(BaseSettings):
     embedding_dimension: int = Field(default=1024, ge=1024, le=1024)
     embedding_base_url: str = "http://localhost:11434"
     embedding_timeout_seconds: int = 120
+    rag_provider: str = "openai"
+    rag_model: str = "gpt-5.2"
+    rag_context_limit: int = Field(default=3, ge=1, le=3)
+    rag_min_similarity: float = Field(default=0.05, ge=0.0, le=1.0)
+    openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-5.2"
+    openai_timeout_seconds: int = 120
+    qwen_ocr_enabled: bool = True
+    qwen_ocr_api_key: str | None = None
+    qwen_ocr_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+    qwen_ocr_model: str = "qwen3.5-ocr"
+    qwen_ocr_timeout_seconds: int = 120
     access_token_minutes: int = 30
     refresh_token_days: int = 7
     cors_origins: list[str] = ["http://localhost:5173"]

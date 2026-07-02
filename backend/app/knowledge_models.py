@@ -258,3 +258,133 @@ class KnowledgeEmbedding(Base, TimestampMixin):
     model_name: Mapped[str] = mapped_column(String(100), index=True)
 
     chunk: Mapped[KnowledgeChunk] = relationship(back_populates="embedding")
+
+
+class ConversationStatus(StrEnum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+class MessageRole(StrEnum):
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+class FeedbackRating(StrEnum):
+    HELPFUL = "helpful"
+    UNHELPFUL = "unhelpful"
+
+
+class KnowledgeEntity(Base, TimestampMixin):
+    __tablename__ = "kg_entity"
+    __table_args__ = (
+        UniqueConstraint("name", "entity_type", name="uq_kg_entity_name_type"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    entity_type: Mapped[str] = mapped_column(String(64), default="concept", index=True)
+    description: Mapped[str | None] = mapped_column(Text)
+    entity_metadata: Mapped[dict[str, object]] = mapped_column(
+        "metadata", JSON, default=dict
+    )
+
+    outgoing_relations: Mapped[list["KnowledgeRelation"]] = relationship(
+        foreign_keys="KnowledgeRelation.source_entity_id",
+        back_populates="source_entity",
+        cascade="all, delete-orphan",
+    )
+    incoming_relations: Mapped[list["KnowledgeRelation"]] = relationship(
+        foreign_keys="KnowledgeRelation.target_entity_id",
+        back_populates="target_entity",
+        cascade="all, delete-orphan",
+    )
+
+
+class KnowledgeRelation(Base, TimestampMixin):
+    __tablename__ = "kg_relation"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_entity_id",
+            "target_entity_id",
+            "relation_type",
+            "document_id",
+            name="uq_kg_relation_document",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_entity_id: Mapped[int] = mapped_column(
+        ForeignKey("kg_entity.id", ondelete="CASCADE"), index=True
+    )
+    target_entity_id: Mapped[int] = mapped_column(
+        ForeignKey("kg_entity.id", ondelete="CASCADE"), index=True
+    )
+    relation_type: Mapped[str] = mapped_column(String(64), default="related_to", index=True)
+    document_id: Mapped[int] = mapped_column(
+        ForeignKey("kb_document.id", ondelete="CASCADE"), index=True
+    )
+    confidence: Mapped[float] = mapped_column(default=0.5)
+    evidence: Mapped[str | None] = mapped_column(Text)
+    relation_metadata: Mapped[dict[str, object]] = mapped_column(
+        "metadata", JSON, default=dict
+    )
+
+    source_entity: Mapped[KnowledgeEntity] = relationship(
+        foreign_keys=[source_entity_id], back_populates="outgoing_relations"
+    )
+    target_entity: Mapped[KnowledgeEntity] = relationship(
+        foreign_keys=[target_entity_id], back_populates="incoming_relations"
+    )
+    document: Mapped[Document] = relationship()
+
+
+class AIConversation(Base, TimestampMixin):
+    __tablename__ = "ai_conversation"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(255))
+    user_id: Mapped[int] = mapped_column(ForeignKey("sys_user.id", ondelete="CASCADE"), index=True)
+    status: Mapped[ConversationStatus] = mapped_column(
+        Enum(ConversationStatus, native_enum=False), default=ConversationStatus.ACTIVE
+    )
+
+    messages: Mapped[list["AIMessage"]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan"
+    )
+
+
+class AIMessage(Base, TimestampMixin):
+    __tablename__ = "ai_message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        ForeignKey("ai_conversation.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[MessageRole] = mapped_column(Enum(MessageRole, native_enum=False))
+    content: Mapped[str] = mapped_column(Text)
+    citations: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    confidence: Mapped[float | None] = mapped_column()
+    model_name: Mapped[str | None] = mapped_column(String(100))
+
+    conversation: Mapped[AIConversation] = relationship(back_populates="messages")
+    feedback: Mapped["AIFeedback | None"] = relationship(
+        back_populates="message", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class AIFeedback(Base, TimestampMixin):
+    __tablename__ = "ai_feedback"
+    __table_args__ = (
+        UniqueConstraint("message_id", "user_id", name="uq_ai_feedback_message_user"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(
+        ForeignKey("ai_message.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("sys_user.id", ondelete="CASCADE"), index=True)
+    rating: Mapped[FeedbackRating] = mapped_column(Enum(FeedbackRating, native_enum=False))
+    comment: Mapped[str | None] = mapped_column(Text)
+
+    message: Mapped[AIMessage] = relationship(back_populates="feedback")

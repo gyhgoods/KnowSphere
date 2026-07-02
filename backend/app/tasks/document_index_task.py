@@ -1,11 +1,14 @@
 import asyncio
 import hashlib
+import re
+from dataclasses import dataclass
 
 from celery import Task
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app import models  # noqa: F401
 from app.core.config import settings
 from app.knowledge_models import (
     Document,
@@ -16,6 +19,56 @@ from app.knowledge_models import (
 from app.services.embedding import get_embedding_service
 from app.services.text_processing import split_text
 from app.tasks.celery_app import celery_app
+
+IMAGE_BLOCK_RE = re.compile(
+    r"\[\[KNOWSPHERE_IMAGE index=(?P<index>\d+) object=(?P<object>\S+) "
+    r"name=(?P<name>\S+) mime=(?P<mime>\S+)]]\n"
+    r"(?P<description>.*?)\n"
+    r"\[\[END_KNOWSPHERE_IMAGE]]",
+    re.DOTALL,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ImageChunk:
+    index: int
+    object_name: str
+    image_name: str
+    mime_type: str
+    content: str
+
+
+def extract_image_chunks(text: str) -> tuple[str, list[ImageChunk]]:
+    images: list[ImageChunk] = []
+
+    def replace(match: re.Match[str]) -> str:
+        image_index = int(match.group("index"))
+        description = re.sub(r"\s+", " ", match.group("description")).strip()
+        image_name = match.group("name")
+        content = "\n".join(
+            [
+                description,
+                f"Image name: {image_name}",
+                "Content type: extracted document image with qwen3.5-ocr text.",
+                (
+                    "Keywords: image, picture, screenshot, diagram, chart, OCR, "
+                    "图片, 图像, 截图, 图表, 识别文字."
+                ),
+            ]
+        )
+        images.append(
+            ImageChunk(
+                index=image_index,
+                object_name=match.group("object"),
+                image_name=image_name,
+                mime_type=match.group("mime"),
+                content=content,
+            )
+        )
+        return ""
+
+    cleaned_text = IMAGE_BLOCK_RE.sub(replace, text)
+    return cleaned_text, images
 
 
 async def index_document_source(document_id: int, file_id: int | None = None) -> int:
@@ -47,32 +100,56 @@ async def index_document_source(document_id: int, file_id: int | None = None) ->
                     KnowledgeChunk.source_key == source_key,
                 )
             )
-            chunks = split_text(
+            text, image_chunks = extract_image_chunks(text)
+            text_chunks = split_text(
                 text,
                 chunk_size=settings.document_chunk_size,
                 chunk_overlap=settings.document_chunk_overlap,
             )
-            if not chunks:
+            if not text_chunks and not image_chunks:
                 await session.commit()
                 return 0
 
-            records = [
-                KnowledgeChunk(
-                    document_id=document_id,
-                    file_id=file_id,
-                    source_key=source_key,
-                    chunk_index=chunk.index,
-                    content=chunk.content,
-                    token_count=chunk.token_count,
-                    content_hash=hashlib.sha256(chunk.content.encode("utf-8")).hexdigest(),
-                    chunk_metadata={
-                        "source_name": source_name,
-                        "start_offset": chunk.start_offset,
-                        "end_offset": chunk.end_offset,
-                    },
+            records: list[KnowledgeChunk] = []
+            for chunk in text_chunks:
+                records.append(
+                    KnowledgeChunk(
+                        document_id=document_id,
+                        file_id=file_id,
+                        source_key=source_key,
+                        chunk_index=len(records),
+                        content=chunk.content,
+                        token_count=chunk.token_count,
+                        content_hash=hashlib.sha256(chunk.content.encode("utf-8")).hexdigest(),
+                        chunk_metadata={
+                            "source_name": source_name,
+                            "source_type": "text",
+                            "start_offset": chunk.start_offset,
+                            "end_offset": chunk.end_offset,
+                        },
+                    )
                 )
-                for chunk in chunks
-            ]
+            for image in image_chunks:
+                records.append(
+                    KnowledgeChunk(
+                        document_id=document_id,
+                        file_id=file_id,
+                        source_key=source_key,
+                        chunk_index=len(records),
+                        content=image.content,
+                        token_count=len(image.content.split()),
+                        content_hash=hashlib.sha256(image.content.encode("utf-8")).hexdigest(),
+                        chunk_metadata={
+                            "source_name": source_name,
+                            "source_type": "image",
+                            "image_index": image.index,
+                            "image_object_name": image.object_name,
+                            "image_name": image.image_name,
+                            "image_mime_type": image.mime_type,
+                            "image_document_title": document.title,
+                        },
+                    )
+                )
             session.add_all(records)
             await session.flush()
 

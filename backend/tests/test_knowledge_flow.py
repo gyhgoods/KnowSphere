@@ -3,6 +3,7 @@ import uuid
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.rag import RAGAnswer
 from app.tasks.document_index_task import index_document
 from app.tasks.document_parse_task import parse_document_file
 
@@ -16,7 +17,20 @@ def auth_headers(client: TestClient) -> dict[str, str]:
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
-def test_knowledge_document_review_and_file_flow() -> None:
+class FakeRAGProvider:
+    model_name = "test-openai"
+
+    def answer(self, question, contexts):
+        return RAGAnswer(
+            answer=f"基于知识库回答：{question} [1]" if contexts else f"直接回答：{question}",
+            confidence=0.9 if contexts else 0.0,
+            model=self.model_name,
+            contexts=contexts,
+        )
+
+
+def test_knowledge_document_review_and_file_flow(monkeypatch) -> None:
+    monkeypatch.setattr("app.api.ai.get_rag_provider", lambda: FakeRAGProvider())
     suffix = uuid.uuid4().hex[:8]
     with TestClient(app) as client:
         headers = auth_headers(client)
@@ -114,6 +128,47 @@ def test_knowledge_document_review_and_file_flow() -> None:
         assert hybrid.json()["items"][0]["document_id"] == document_id
         assert hybrid.json()["items"][0]["score"]["rerank"] > 0
         assert "content_phrase" in hybrid.json()["items"][0]["explanations"]
+
+        answer = client.post(
+            "/api/v1/ai/ask",
+            headers=headers,
+            json={"question": "Version two", "space_id": space_id, "limit": 3},
+        )
+        assert answer.status_code == 200, answer.text
+        answer_body = answer.json()
+        assert answer_body["conversation_id"] > 0
+        assert answer_body["citations"][0]["document_id"] == document_id
+        assert "[1]" in answer_body["answer"]
+
+        messages = client.get(
+            f"/api/v1/ai/conversations/{answer_body['conversation_id']}/messages",
+            headers=headers,
+        )
+        assert messages.status_code == 200
+        assert [item["role"] for item in messages.json()] == ["user", "assistant"]
+
+        feedback = client.post(
+            f"/api/v1/ai/messages/{answer_body['answer_message_id']}/feedback",
+            headers=headers,
+            json={"rating": "helpful", "comment": "grounded"},
+        )
+        assert feedback.status_code == 200, feedback.text
+        assert feedback.json()["rating"] == "helpful"
+
+        graph_extract = client.post(
+            "/api/v1/graph/extract",
+            headers=headers,
+            json={"document_id": document_id},
+        )
+        assert graph_extract.status_code == 200, graph_extract.text
+        assert graph_extract.json()["relation_count"] >= 1
+
+        graph = client.get(
+            f"/api/v1/graph?space_id={space_id}",
+            headers=headers,
+        )
+        assert graph.status_code == 200, graph.text
+        assert graph.json()["relations"]
 
         versions = client.get(
             f"/api/v1/documents/{document_id}/versions", headers=headers

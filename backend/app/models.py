@@ -19,12 +19,17 @@ from app.core.database import Base, TimestampMixin
 
 # Import knowledge-domain models so Alembic sees their metadata.
 from app.knowledge_models import (  # noqa: E402, F401
+    AIConversation,
+    AIFeedback,
+    AIMessage,
     Category,
     Document,
     DocumentFile,
     DocumentVersion,
     KnowledgeChunk,
     KnowledgeEmbedding,
+    KnowledgeEntity,
+    KnowledgeRelation,
     KnowledgeSpace,
     Tag,
 )

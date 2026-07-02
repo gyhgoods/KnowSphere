@@ -197,3 +197,71 @@ export interface SearchResponse {
   took_ms: number
   items: SearchResult[]
 }
+
+export interface Citation {
+  index: number
+  document_id: number
+  document_title: string
+  chunk_id: number
+  source_name: string
+  excerpt: string
+  score: number
+  source_type: 'text' | 'image'
+  image_url: string | null
+  image_name: string | null
+  image_mime_type: string | null
+  image_document_title: string | null
+}
+
+export interface AskResponse {
+  conversation_id: number
+  question_message_id: number
+  answer_message_id: number
+  answer: string
+  confidence: number
+  model: string
+  citations: Citation[]
+}
+
+export interface AIConversation {
+  id: number
+  title: string
+  status: 'active' | 'archived'
+  created_at: string
+  updated_at: string
+}
+
+export interface AIMessage {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  citations: Citation[]
+  confidence: number | null
+  model_name: string | null
+  created_at: string
+}
+
+export interface GraphEntity {
+  id: number
+  name: string
+  entity_type: string
+  description: string | null
+}
+
+export interface GraphRelation {
+  id: number
+  source_entity_id: number
+  source_name: string
+  target_entity_id: number
+  target_name: string
+  relation_type: string
+  document_id: number
+  document_title: string
+  confidence: number
+  evidence: string | null
+}
+
+export interface GraphResponse {
+  entities: GraphEntity[]
+  relations: GraphRelation[]
+}

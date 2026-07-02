@@ -29,6 +29,16 @@ const router = createRouter({
           meta: { permission: 'document.view' },
         },
         {
+          path: 'assistant',
+          component: () => import('@/views/AIAssistantView.vue'),
+          meta: { permission: 'document.view' },
+        },
+        {
+          path: 'graph',
+          component: () => import('@/views/KnowledgeGraphView.vue'),
+          meta: { permission: 'document.view' },
+        },
+        {
           path: 'admin/users',
           component: () => import('@/views/UsersView.vue'),
           meta: { permission: 'user.manage' },
